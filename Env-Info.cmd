@@ -11,14 +11,10 @@ set
 
 @echo Locate shells and programs
 @echo ==========================
-where cmd
-where bash
-where java
-where scala
-where python
-where sbt
-where nuget
-where choco
+@for %%p in (cmd bash java javac scala python ant mvn sbt nuget choco scoop curl wget) do (
+  @echo %%p
+  where %%p
+)
 
 if "%AGENT_HOMEDIRECTORY%" == "" (
   @echo ==== Not running on VSO worker node ====
