@@ -55,7 +55,7 @@ set TEST_RESULTS_DIR=TestResults
   "%XUNIT_EXE%" %TESTS% %XUNIT_ARGS%
 ) else (
   set VSTEST_ARGS= %VSTEST_ARGS% /Framework:Framework45
-  set VSTEST_ARGS= %VSTEST_ARGS% /TestCaseFilter:TestCategory=%TEST_CATEGORY%
+  set VSTEST_ARGS= %VSTEST_ARGS% /TestCaseFilter:TestCategory=%TEST_CATEGORIES%
 
   "%VSTESTEXE%" %VSTEST_ARGS% %TESTS%
 )
