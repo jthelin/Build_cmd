@@ -1,6 +1,8 @@
 @setlocal
 @ECHO off
 
+set PROJ_NAME=MyProj
+
 SET CMDHOME=%~dp0
 @REM Remove trailing backslash \
 set CMDHOME=%CMDHOME:~0,-1%
@@ -16,7 +18,6 @@ SET MSBUILDOPT=/verbosity:minimal
 if "%builduri%" == "" set builduri=Build.cmd
 set USE_BINARIES_DIR=True
 
-set PROJ_NAME=MyProj
 set PROJ=%CMDHOME%\%PROJ_NAME%.sln
 
 @echo ===== Building %PROJ% =====
