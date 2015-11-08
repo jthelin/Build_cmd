@@ -1,0 +1,19 @@
+@setlocal
+@ECHO off
+
+set TEST_CATEGORIES="BVT|Functional"
+
+@REM Note: Due to more of Windows .cmd script parameter passing quirks, 
+@REM       we can't pass this value with '|' as cmdline argument, 
+@REM       so we need to pass it in through the back door as environment variable, 
+@REM       scoped by setlocal
+
+SET CMDHOME=%~dp0
+@REM Remove trailing backslash \
+set CMDHOME=%CMDHOME:~0,-1%
+
+@REM Note: We transfer _complete_ control to the Test.cmd script here because we don't use CALL.
+
+"%CMDHOME%\Test.cmd"
+
+@REM Note: Execution will NOT return here, and the exit code returned to the caller will be whatever the other script returned.
