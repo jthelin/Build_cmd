@@ -37,8 +37,6 @@ if ERRORLEVEL 1 (
  )
 :MsBuildFound
 
-SET MSBUILDEXEDIR=%FrameworkDir%\%FrameworkVersion%
-SET MSBUILDEXE=%MSBUILDEXEDIR%\MSBuild.exe
 SET MSBUILDOPT=/verbosity:minimal
 
 if "%builduri%" == "" set builduri=Build.cmd
