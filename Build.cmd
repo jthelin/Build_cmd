@@ -34,7 +34,8 @@ if ERRORLEVEL 1 (
 ) else (
     @REM MsBuild.exe is in PATH, so just use it.
    SET MSBUILDEXE=MSBuild.exe
- )
+)
+
 :MsBuildFound
 
 SET MSBUILDOPT=/verbosity:minimal
