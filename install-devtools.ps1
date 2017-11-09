@@ -20,7 +20,9 @@ else
     return
 }
 
-choco install sysinternals 7zip curl git notepadplusplus putty
+choco install sysinternals 7zip.install curl git.install notepadplusplus.install putty rdcman
+
+choco install python3
 
 choco install -ia "INSTALLDIR=""C:\java\jdk8""" jdk8
 # Install Maven after JDK so that is finds JAVA_HOME correctly.
