@@ -18,7 +18,7 @@ dotnet add src\OrleansSilo\OrleansSilo.csproj reference src\OrleansGrainInterfac
 dotnet add src\OrleansGrains\OrleansGrains.csproj reference src\OrleansGrainInterfaces\OrleansGrainInterfaces.csproj
 dotnet add src\OrleansSilo\OrleansSilo.csproj reference src\OrleansGrains\OrleansGrains.csproj
 
-set ORLEANS_VER=2.0.0-beta1
+set ORLEANS_VER=2.0.3
 
 dotnet add src\OrleansClient\OrleansClient.csproj package Microsoft.Orleans.Core --version %ORLEANS_VER%
 dotnet add src\OrleansClient\OrleansClient.csproj package Microsoft.Orleans.Client --version %ORLEANS_VER%
@@ -35,3 +35,5 @@ dotnet add src\OrleansSilo\OrleansSilo.csproj package Microsoft.Orleans.OrleansR
 dotnet add src\OrleansSilo\OrleansSilo.csproj package Microsoft.Orleans.Server --version %ORLEANS_VER%
 
 dotnet restore
+
+dotnet build
