@@ -20,10 +20,10 @@ sudo apt-key fingerprint 0EBFCD88
 # Add the Docker repository to APT sources:
 sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 
-sudo apt-get update
+sudo apt-get update --quiet
 
 # Install docker-ce package.
-sudo apt-get install --no-install-recommends --yes docker-ce
+sudo apt-get install --no-install-recommends --yes --quiet docker-ce
 
 # Check status of docker daemon.
 sudo systemctl status docker
