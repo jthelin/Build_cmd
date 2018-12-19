@@ -23,7 +23,7 @@ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubun
 sudo apt-get update
 
 # Install docker-ce package.
-sudo apt-get install docker-ce
+sudo apt-get install --no-install-recommends --yes docker-ce
 
 # Check status of docker daemon.
 sudo systemctl status docker
