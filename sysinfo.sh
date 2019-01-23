@@ -1,4 +1,6 @@
-echo System configuration info for host $HOSTNAME
+#!/bin/bash
+
+echo "System configuration info for host $HOSTNAME"
 
 echo .
 echo uname
@@ -35,6 +37,15 @@ done
 
 if [ `which nvidia-smi` ]
 then
+
+echo .
+echo nvidia device info
+echo .
+nvidia-container-cli --load-kmods info
+echo .
+echo nvidia driver info
+echo .
+nvidia-container-cli list
 
 echo .
 echo nvidia-smi
