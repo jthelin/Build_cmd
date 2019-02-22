@@ -35,7 +35,7 @@ do
     dpkg-query --list "*${pkg,,*}*"
 done
 
-if [ `which nvidia-smi` ]
+if [ -x "$(command -v nvidia-smi)" ]
 then
 
 echo .
