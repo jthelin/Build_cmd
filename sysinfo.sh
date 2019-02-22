@@ -23,10 +23,16 @@ lscpu
 # cat /proc/meminfo
 
 echo .
+echo Show PCIe Device Interconnect Tree
+echo .
+
+( lspci -t -v ) || echo "WARNING: Cannot show PCIe Device Tree."
+
+echo .
 echo Show NVIDIA Kernel Modules and Packages Installed
 echo .
 
-( lspci | grep -i NVIDIA ) || echo "WARNING: No NVIDIA modules found."
+( lspci | grep -i NVIDIA ) || echo "WARNING: No NVIDIA devices found."
 
 for pkg in NVIDIA CUDA NCCL
 do
