@@ -68,3 +68,8 @@ else
     echo "WARNING: nvidia-smi app was not found."
     echo !
 fi
+
+echo .
+echo Environment variables
+echo .
+env | sort
