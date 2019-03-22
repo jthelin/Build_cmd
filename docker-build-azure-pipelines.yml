@@ -1,0 +1,48 @@
+
+variables:
+  DOCKER_LABEL: 'my-docker'
+  DOCKER_REGISTRY: 'MYREG.azurecr.io'
+  imageName: '$(DOCKER_LABEL):$(Build.BuildId)'
+
+# This assumes we have previously created a Docker Registry service connection in our Azure DevOps Pipeline account.
+#   Connection Name = MYREG.azurecr.io
+#   Docker Registry = https://MYREG.azurecr.io/
+#   Docker ID = MYREG_USER
+#   Password = --REDACTED--
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops#sep-docreg
+
+jobs:
+- job: 'Linux_Ubuntu_16'
+  pool:
+    vmImage: ubuntu-16.04
+  steps:
+  - task: Docker@1
+    displayName: 'Docker Build'
+    inputs:
+      command: build
+      useDefaultContext: false
+      buildContext: '.'
+      dockerFile: './Dockerfile'
+      imageName: '$(imageName)'
+  - task: Docker@1
+    displayName: 'Tag docker image'
+    inputs:
+      command: tag
+      imageName: $(imageName)
+      arguments: $(DOCKER_REGISTRY)/$(imageName)
+  - task: Docker@1
+    displayName: 'Docker container registry login'
+    inputs:
+      command: login
+      containerRegistryType: 'Container Registry'
+      dockerRegistryEndpoint: $(DOCKER_REGISTRY)
+  - task: Docker@1
+    displayName: 'Push docker image'
+    # Only run for the master branch + if build succeeded.
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    inputs:
+      command: push
+      containerRegistryType: 'Container Registry'
+      dockerRegistryEndpoint: $(DOCKER_REGISTRY)
+      imageName: $(DOCKER_REGISTRY)/$(imageName)
+      includeSourceTags: true
