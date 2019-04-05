@@ -70,6 +70,11 @@ else
 fi
 
 echo .
+echo Linux kernel settings
+echo .
+sysctl --all
+
+echo .
 echo Environment variables
 echo .
 env | sort
