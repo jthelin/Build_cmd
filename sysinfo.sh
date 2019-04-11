@@ -75,6 +75,11 @@ echo .
 sysctl --all
 
 echo .
+echo Current process limit settings
+echo .
+ulimit -a
+
+echo .
 echo Environment variables
 echo .
 env | sort
