@@ -1,7 +1,14 @@
 #!/bin/bash
+#
+# From: https://github.com/JetBrains/clion-wsl
+
 set -e
 
 SSHD_LISTEN_ADDRESS=127.0.0.1
+if [ -e "/dev/vsock" ]; then # in case of WSL2
+	SSHD_LISTEN_ADDRESS=0.0.0.0
+fi
+
 SSHD_PORT=2222
 SSHD_FILE=/etc/ssh/sshd_config
 SUDOERS_FILE=/etc/sudoers
