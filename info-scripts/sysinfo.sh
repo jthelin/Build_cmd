@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "System configuration info for host $HOSTNAME"
+echo "System configuration info for host ${HOSTNAME}"
 
 echo .
 echo uname

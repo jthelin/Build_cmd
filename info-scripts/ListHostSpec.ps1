@@ -6,10 +6,11 @@
 $cpu  = Get-WmiObject Win32_Processor
 $os   = Get-WmiObject Win32_OperatingSystem
 $bios = Get-WmiObject Win32_Bios
-$mem  = Get-WmiObject CIM_PhysicalMemory | Measure -Property Capacity -Sum | % { [Math]::Round(($_.sum / 1GB), 2) }
+$mem  = Get-WmiObject CIM_PhysicalMemory ^
+    | Measure-Object -Property Capacity -Sum ^
+    | ForEach-Object { [Math]::Round(($_.sum / 1GB), 2) }
 
-Foreach ($c in $cpu)
-{
+Foreach ($c in $cpu) {
     "CPU Name        : " + $c.Name
     "Physical Cores  : " + $c.NumberOfCores
     "Logical  Cores  : " + $c.NumberOfLogicalProcessors

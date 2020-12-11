@@ -16,7 +16,7 @@ SUDOERS_FILE=/etc/sudoers
 # This is to avoid creating extra copies of file if ~/.bashrc is symlinked under version control.
 # https://github.com/JetBrains/clion-wsl/issues/4
 BASHRC_FILE="$(readlink -f ~/.bashrc)"
-  
+
 # 0. update package lists
 sudo apt-get update
 
@@ -28,7 +28,7 @@ sudo apt install -y openssh-server
 sudo apt install -y cmake gcc clang gdb valgrind build-essential
 
 # 1.1. configure sshd
-sudo cp $SSHD_FILE ${SSHD_FILE}.`date '+%Y-%m-%d_%H-%M-%S'`.back
+sudo cp $SSHD_FILE "${SSHD_FILE}.$(date '+%Y-%m-%d_%H-%M-%S').back"
 sudo sed -i '/^ListenAddress/ d' $SSHD_FILE
 sudo sed -i '/^Port/ d' $SSHD_FILE
 sudo sed -i '/^PasswordAuthentication/ d' $SSHD_FILE
@@ -38,20 +38,20 @@ echo "Port ${SSHD_PORT}"          | sudo tee -a $SSHD_FILE
 echo "PasswordAuthentication yes" | sudo tee -a $SSHD_FILE
 # 1.2. apply new settings
 sudo service ssh --full-restart
-  
-# 2. autostart: run sshd 
-sed -i '/^sudo service ssh --full-restart/ d' ${BASHRC_FILE}
+
+# 2. autostart: run sshd
+sed -i '/^sudo service ssh --full-restart/ d' "${BASHRC_FILE}"
 echo "%sudo ALL=(ALL) NOPASSWD: /usr/sbin/service ssh --full-restart" | sudo tee -a $SUDOERS_FILE
-cat << 'EOF' >> ${BASHRC_FILE}
+cat << 'EOF' >> "${BASHRC_FILE}"
 sshd_status=$(service ssh status)
 if [[ $sshd_status = *"is not running"* ]]; then
   sudo service ssh --full-restart
 fi
 EOF
-  
+
 
 # summary: SSHD config info
-echo 
+echo
 echo "SSH server parameters ($SSHD_FILE):"
 echo "ListenAddress ${SSHD_LISTEN_ADDRESS}"
 echo "Port ${SSHD_PORT}"
