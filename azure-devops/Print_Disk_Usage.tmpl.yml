@@ -1,0 +1,20 @@
+# Print disk usage info on the Azure DevOps build server, and list the contents of ArtifactStagingDirectory
+#
+steps:
+  - bash: df -h
+    displayName: 'Print Disk Usage'
+    condition:  eq( variables['Agent.OS'], 'Linux' )
+    continueOnError: true
+  - bash: ls -lh $(Build.ArtifactStagingDirectory)
+    displayName: 'Directory: Build.ArtifactStagingDirectory'
+    condition:  eq( variables['Agent.OS'], 'Linux' )
+    continueOnError: true
+  - powershell: Get-PSDrive
+    displayName: 'Print Disk Usage'
+    condition:  eq( variables['Agent.OS'], 'Windows_NT' )
+    continueOnError: true
+  - script: dir /s $(Build.ArtifactStagingDirectory)
+    displayName: 'Directory: Build.ArtifactStagingDirectory'
+    condition:  eq( variables['Agent.OS'], 'Windows_NT' )
+    continueOnError: true
+
