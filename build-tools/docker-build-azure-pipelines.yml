@@ -1,4 +1,3 @@
-
 variables:
   DOCKER_LABEL: 'my-docker'
   DOCKER_REGISTRY: 'MYREG.azurecr.io'
