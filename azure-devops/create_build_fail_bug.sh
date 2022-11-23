@@ -13,6 +13,9 @@
 #     env:
 #       AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
 
+# Protect against use of uninitialized variables
+set -u
+
 # Get the directory path of this script.
 CMD_HOME=$( dirname "$(realpath -s "$0")" )
 REPO_ROOT=${CMD_HOME}/..
@@ -49,15 +52,32 @@ if [[ $(command -v az) == "" ]]; then
   exit 1
 fi
 
+# Work out the initial bug owner
+if [[ "${BUILD_REQUESTEDFOREMAIL}" != "" ]]; then
+  # Use the specified owner e-mail address
+  ADO_BUG_OWNER="${BUILD_REQUESTEDFOREMAIL}"
+else
+  # If the requester e-mail address is not specified,
+  #  then we will have to look up from the name
+  #  (which may not be uniquely unambiguous in the system)
+  az boards query \
+     --wiql "SELECT [System.AssignedTo] FROM workitems WHERE [System.AreaPath] under '${ADO_PROJECT}' and [System.AssignedTo] == '${BUILD_SOURCEVERSIONAUTHOR}' and [System.ChangedDate] >= @today-14" \
+     --org "${ADO_ORG}" \
+     --project "${ADO_PROJECT}" \
+     > find_bug_tmp.txt
+  # Parse the relevant field from the JSON query reply
+  ADO_BUG_OWNER=$( jq '.[0].fields["System.AssignedTo"].uniqueName' < find_bug_tmp.txt | sed 's/\"//g' )
+fi
+echo "##[debug] Initial bug owner = ${ADO_BUG_OWNER}"
+
 # Metadata used to create new build-break
-ADO_BUG_OWNER="${BUILD_REQUESTEDFOREMAIL:-"developer@example.com"}"
 ADO_BUILD_WEB_URI="${ADO_ORG}/${ADO_PROJECT}/_build/results?buildId=${BUILD_ID}&view=results"
 ADO_BUILD_WEB_LINK="<a href=\"${ADO_BUILD_WEB_URI}\">${ADO_BUILD_WEB_URI}</a>"
 
 if [[ "${IS_MAIN_BRANCH}" == "1" ]]; then
-  # Any build break of main branch is initially classified as priority 0 bug.
-  ADO_BUG_PRI="0"
-  ADO_BUG_TITLE_PREFIX="[P0] [Build Break]"
+  # Policy from Shiproom: Any build break of main branch is initially classified as priority 0 bug.
+  ADO_BUG_PRI=${ADO_BUG_PRI:-"0"}
+  ADO_BUG_TITLE_PREFIX="[P${ADO_BUG_PRI}] [Build Break]"
 else
   ADO_BUG_PRI="4"
   ADO_BUG_TITLE_PREFIX="[TEST-IGNORE]"
@@ -66,11 +86,11 @@ fi
 ADO_BUG_TITLE="${ADO_BUG_TITLE_PREFIX} '${FAILED_PIPELINE}' build ${FAILED_BUILD} failed for git commit ${FAILED_COMMIT_ID}"
 ADO_BUG_INFO="<div>Build ${FAILED_BUILD} failed for pipeline '${FAILED_PIPELINE}' branch ${FAILED_BRANCH} <br> git commit ${FAILED_COMMIT_ID} <br> '${FAILED_COMMIT_MSG}' <br> ${ADO_BUILD_WEB_LINK}</div>"
 ADO_BUG_ASSIGN_NOTE="<div>Initially assigning ${ADO_BUG_OWNER} as owner for this '${FAILED_BRANCH_NAME}' branch build break occurrence with your git commit ${FAILED_COMMIT_ID} <br> ${ADO_BUILD_WEB_LINK}</div>"
-ADO_BUG_RESOLVE_NOTE="<div>If this build failure is caused by an existing known bug, then in the Related Work section please add a Duplicate-Of link to that root cause bug, and close this bug as Resolved / Duplicate</div>"
-
-# See also https://swtech.visualstudio.com/_apis/wit/fields
+ADO_BUG_RESOLVE_NOTE="<div>If this build failure is caused by an existing KNOWN BUG, then in the Related Work section please add a Duplicate-Of link to that root cause bug, and close this bug as Resolved / Duplicate</div>"
 
 echo "##vso[task.logissue type=warning] Creating tracking bug for failed build ${FAILED_BUILD} on branch ${FAILED_BRANCH_NAME}"
+
+# See also https://swtech.visualstudio.com/_apis/wit/fields
 
 az boards work-item create \
    --type bug \
@@ -83,5 +103,9 @@ az boards work-item create \
      "Microsoft.VSTS.TCM.ReproSteps=${ADO_BUG_INFO}" \
      "Microsoft.VSTS.TCM.SystemInfo=${ADO_BUG_RESOLVE_NOTE}" \
    --org "${ADO_ORG}" \
-   --project "${ADO_PROJECT}"
+   --project "${ADO_PROJECT}" \
+| tee create_build_fail_bug.log
 
+ADO_BUG_ID=$( jq '.id' < create_build_fail_bug.log )
+
+echo "##vso[task.logissue type=error] Created build break tracking bug id ${ADO_BUG_ID} for failed build ${FAILED_BUILD} on branch ${FAILED_BRANCH_NAME}"
