@@ -12,6 +12,7 @@
 #   - bash: script/create_build_fail_bug.sh
 #     env:
 #       AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+#       ADO_ASSIGN_BUG_OWNER: True
 
 # Exit immediately if a command exits with a non-zero status, or if we try to use any uninitialized variable.
 set -e -u -o pipefail
@@ -55,7 +56,10 @@ if [[ $(command -v jq) == "" ]]; then
 fi
 
 # Work out the initial bug owner
-if [[ "${BUILD_REQUESTEDFOREMAIL}" != "" ]]; then
+if [[ "${ADO_BUG_OWNER:-"Committer"}" != "Committer" ]]; then
+  # Use the specified DRI e-mail address for assigning build-break bugs
+  echo "##[debug] Using pre-defined DRI bug owner = ${ADO_BUG_OWNER}"
+elif [[ "${BUILD_REQUESTEDFOREMAIL}" != "" ]]; then
   # Use the specified owner e-mail address
   ADO_BUG_OWNER="${BUILD_REQUESTEDFOREMAIL}"
 else
@@ -70,7 +74,6 @@ else
   # Parse the relevant field from the JSON query reply
   ADO_BUG_OWNER=$( jq '.[0].fields["System.AssignedTo"].uniqueName' < find_bug.tmp.txt | sed 's/\"//g' )
 fi
-echo "##[debug] Initial bug owner = ${ADO_BUG_OWNER}"
 
 # Metadata used to create new build-break
 ADO_BUILD_WEB_URI="${ADO_ORG}/${ADO_PROJECT}/_build/results?buildId=${BUILD_ID}&view=results"
@@ -98,8 +101,6 @@ echo "##vso[task.logissue type=warning] Creating tracking bug for failed build $
 az boards work-item create \
    --type bug \
    --title "${ADO_BUG_TITLE}" \
-   --discussion "${ADO_BUG_ASSIGN_NOTE}" \
-   --assigned-to "${ADO_BUG_OWNER}" \
    --fields \
      "Microsoft.VSTS.Build.FoundIn=${FAILED_BUILD}" \
      "Microsoft.VSTS.Common.Priority=${ADO_BUG_PRI}" \
@@ -113,5 +114,18 @@ az boards work-item create \
 ADO_BUG_ID=$( jq '.id' < create_build_fail_bug.log )
 
 echo "##vso[task.logissue type=error] Created build-break tracking bug id ${ADO_BUG_ID} for failed build ${FAILED_BUILD} on branch ${FAILED_BRANCH_NAME}"
+
+if [[ "${ADO_ASSIGN_BUG_OWNER}" == "False" ]]; then
+  echo "##[debug] Not assigning build-break bug ownership"
+else
+  az boards work-item update \
+     --id "${ADO_BUG_ID}" \
+     --org "${ADO_ORG}" \
+     --assigned-to "${ADO_BUG_OWNER}" \
+     --discussion "<div>${ADO_BUG_ASSIGN_NOTE}</div>" \
+  | tee --append create_build_fail_bug.log
+
+  echo "##[info] Build-break tracking bug id ${ADO_BUG_ID} assigned to owner = ${ADO_BUG_OWNER}"
+fi
 
 echo "${ADO_ORG}/${ADO_PROJECT}/_workitems/edit/${ADO_BUG_ID}"
