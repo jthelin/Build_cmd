@@ -13,14 +13,8 @@
 #     env:
 #       AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
 
-# Protect against use of uninitialized variables
-set -u
-
-# Get the directory path of this script.
-CMD_HOME=$( dirname "$(realpath -s "$0")" )
-REPO_ROOT=${CMD_HOME}/..
-
-cd "${REPO_ROOT}" || exit
+# Exit immediately if a command exits with a non-zero status, or if we try to use any uninitialized variable.
+set -e -u -o pipefail
 
 env | sort
 
@@ -34,7 +28,11 @@ FAILED_COMMIT_ID=${BUILD_SOURCEVERSION:-"COMMIT_ID_UNKNOWN"}
 FAILED_COMMIT_MSG=${BUILD_SOURCEVERSIONMESSAGE:-"COMMIT_MSG_UNKNOWN"}
 
 ADO_ORG=${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI:-"https://swtech.visualstudio.com/"}
-ADO_PROJECT=${SYSTEM_TEAMPROJECT:-"Projects"}
+ADO_PROJECT=${SYSTEM_TEAMPROJECT:-"MyProjects"}
+
+ADO_BUG_WIKI_URI="${ADO_ORG}/${ADO_PROJECT}/_wiki/wikis/MyProjects.wiki/1234/Bug-Process"
+
+ADO_BUG_TAG=${ADO_BUG_TAG:-"Build-Break"}
 
 if [[ "${FAILED_BRANCH}" == "refs/heads/main" || "${FAILED_BRANCH}" == "refs/heads/master" ]]; then
   IS_MAIN_BRANCH=1
@@ -51,6 +49,10 @@ if [[ $(command -v az) == "" ]]; then
   echo "##vso[task.logissue type=error] WARNING: Cannot find Azure DevOps CLI -- cannot create tracking bug for failed build."
   exit 1
 fi
+if [[ $(command -v jq) == "" ]]; then
+  echo "##vso[task.logissue type=error] WARNING: Cannot find jq tool -- cannot create tracking bug for failed build."
+  exit 1
+fi
 
 # Work out the initial bug owner
 if [[ "${BUILD_REQUESTEDFOREMAIL}" != "" ]]; then
@@ -64,9 +66,9 @@ else
      --wiql "SELECT [System.AssignedTo] FROM workitems WHERE [System.AreaPath] under '${ADO_PROJECT}' and [System.AssignedTo] == '${BUILD_SOURCEVERSIONAUTHOR}' and [System.ChangedDate] >= @today-14" \
      --org "${ADO_ORG}" \
      --project "${ADO_PROJECT}" \
-     > find_bug_tmp.txt
+     > find_bug.tmp.txt
   # Parse the relevant field from the JSON query reply
-  ADO_BUG_OWNER=$( jq '.[0].fields["System.AssignedTo"].uniqueName' < find_bug_tmp.txt | sed 's/\"//g' )
+  ADO_BUG_OWNER=$( jq '.[0].fields["System.AssignedTo"].uniqueName' < find_bug.tmp.txt | sed 's/\"//g' )
 fi
 echo "##[debug] Initial bug owner = ${ADO_BUG_OWNER}"
 
@@ -84,9 +86,10 @@ else
 fi
 
 ADO_BUG_TITLE="${ADO_BUG_TITLE_PREFIX} '${FAILED_PIPELINE}' build ${FAILED_BUILD} failed for git commit ${FAILED_COMMIT_ID}"
-ADO_BUG_INFO="<div>Build ${FAILED_BUILD} failed for pipeline '${FAILED_PIPELINE}' branch ${FAILED_BRANCH} <br> git commit ${FAILED_COMMIT_ID} <br> '${FAILED_COMMIT_MSG}' <br> ${ADO_BUILD_WEB_LINK}</div>"
-ADO_BUG_ASSIGN_NOTE="<div>Initially assigning ${ADO_BUG_OWNER} as owner for this '${FAILED_BRANCH_NAME}' branch build break occurrence with your git commit ${FAILED_COMMIT_ID} <br> ${ADO_BUILD_WEB_LINK}</div>"
-ADO_BUG_RESOLVE_NOTE="<div>If this build failure is caused by an existing KNOWN BUG, then in the Related Work section please add a Duplicate-Of link to that root cause bug, and close this bug as Resolved / Duplicate</div>"
+ADO_BUG_INFO="Build ${FAILED_BUILD} failed for pipeline '${FAILED_PIPELINE}' branch ${FAILED_BRANCH} <br> git commit ${FAILED_COMMIT_ID} <br> '${FAILED_COMMIT_MSG}' <br> ${ADO_BUILD_WEB_LINK}"
+ADO_BUG_ASSIGN_NOTE="Initially assigning ${ADO_BUG_OWNER} as owner for this '${FAILED_BRANCH_NAME}' branch build break occurrence with your git commit ${FAILED_COMMIT_ID} <br> ${ADO_BUILD_WEB_LINK}"
+ADO_BUG_RESOLVE_NOTE1="If this build failure is caused by an existing KNOWN BUG, then in the Related Work section please add a Duplicate-Of link to that root cause bug, and close this bug as Resolved / Duplicate."
+ADO_BUG_RESOLVE_NOTE2="See the wiki for more details on the <a href=\"${ADO_BUG_WIKI_URI}\">${ADO_PROJECT} Bug Process</a>"
 
 echo "##vso[task.logissue type=warning] Creating tracking bug for failed build ${FAILED_BUILD} on branch ${FAILED_BRANCH_NAME}"
 
@@ -100,12 +103,13 @@ az boards work-item create \
    --fields \
      "Microsoft.VSTS.Build.FoundIn=${FAILED_BUILD}" \
      "Microsoft.VSTS.Common.Priority=${ADO_BUG_PRI}" \
-     "Microsoft.VSTS.TCM.ReproSteps=${ADO_BUG_INFO}" \
-     "Microsoft.VSTS.TCM.SystemInfo=${ADO_BUG_RESOLVE_NOTE}" \
+     "Microsoft.VSTS.TCM.ReproSteps=<div>${ADO_BUG_INFO}</div>" \
+     "Microsoft.VSTS.TCM.SystemInfo=<div>${ADO_BUG_RESOLVE_NOTE1}<br><br>${ADO_BUG_RESOLVE_NOTE2}</div>" \
+     "System.Tags=${ADO_BUG_TAG}" \
    --org "${ADO_ORG}" \
    --project "${ADO_PROJECT}" \
 | tee create_build_fail_bug.log
 
 ADO_BUG_ID=$( jq '.id' < create_build_fail_bug.log )
 
-echo "##vso[task.logissue type=error] Created build break tracking bug id ${ADO_BUG_ID} for failed build ${FAILED_BUILD} on branch ${FAILED_BRANCH_NAME}"
+echo "##vso[task.logissue type=error] Created build-break tracking bug id ${ADO_BUG_ID} for failed build ${FAILED_BUILD} on branch ${FAILED_BRANCH_NAME}"
