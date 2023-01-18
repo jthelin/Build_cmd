@@ -113,3 +113,5 @@ az boards work-item create \
 ADO_BUG_ID=$( jq '.id' < create_build_fail_bug.log )
 
 echo "##vso[task.logissue type=error] Created build-break tracking bug id ${ADO_BUG_ID} for failed build ${FAILED_BUILD} on branch ${FAILED_BRANCH_NAME}"
+
+echo "${ADO_ORG}/${ADO_PROJECT}/_workitems/edit/${ADO_BUG_ID}"
