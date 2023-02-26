@@ -1,33 +1,20 @@
-# Google Test Framework
+## ---------- googletest ----------
+# Google Test library
+# https://github.com/google/googletest/blob/main/googletest/README.md
 
-# https://github.com/google/googletest/blob/master/googletest/README.md
+include(FetchContent)
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
+FetchContent_Declare(
+  googletest
+  # Specify the commit you depend on and update it regularly.
+  URL https://github.com/google/googletest/archive/5376968f6948923e2411081fd9372e71a59d8e77.zip
+)
 
-set(PKG googletest)
-
-# Download and unpack package sources at cmake-configuration time
-configure_file(${CMAKE_CURRENT_LIST_DIR}/${PKG}-download.in ${CMAKE_CURRENT_BINARY_DIR}/${PKG}-build/CMakeLists.txt)
-execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-        RESULT_VARIABLE result
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${PKG}-build )
-if(result)
-    message(FATAL_ERROR "CMake generate step for ${PKG} failed: ${result}")
-endif()
-execute_process(COMMAND ${CMAKE_COMMAND} --build .
-        RESULT_VARIABLE result
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${PKG}-build )
-if(result)
-    message(FATAL_ERROR "Build step for ${PKG} failed: ${result}")
+if(WIN32)
+  # For Windows: Prevent overriding the parent project's compiler/linker settings
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 endif()
 
-# Prevent overriding the parent project's compiler/linker settings on Windows
-SET(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
 
-# This defines the gtest and gtest_main targets.
-# Add package artifacts directly to our build.
-add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/${PKG}-src
-        ${CMAKE_CURRENT_BINARY_DIR}/${PKG}-build
-        EXCLUDE_FROM_ALL)
-
-set(PKG "")
+## ---------- googletest ----------
