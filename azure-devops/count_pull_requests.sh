@@ -39,7 +39,7 @@ az repos pr list \
 
 echo "Pull Requests - Created"
 # Parse the relevant field from the JSON query reply
-jq --compact-output '.[] | { pullRequestId, title }' < pr.created.tmp.json
+jq --compact-output '.[] | { pullRequestId, creationDate, title }' < pr.created.tmp.json
 
 az repos pr list \
     --reviewer "${ADO_USER}" \
@@ -50,4 +50,4 @@ az repos pr list \
 
 echo "Pull Requests - Reviewed"
 # Parse the relevant field from the JSON query reply
-jq --compact-output '.[] | { pullRequestId, title }' < pr.reviewed.tmp.json
+jq --compact-output '.[] | { pullRequestId, creationDate, title }' < pr.reviewed.tmp.json
